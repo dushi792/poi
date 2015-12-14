@@ -209,4 +209,18 @@
     "desja-JP": "舰娘老黄历改二移植版，在此感谢原作者 HY Little",
     "desen-US": "An almanac"
   }
+    "poi-plugin-almanac": {
+    "zh-CN": "泊地修理",
+    "zh-TW": "泊地修理",
+    "ja-JP": "泊地修理",
+    "en-US": "泊地修理",
+    "version": "v0.0.0",
+    "icon": "medkit",
+    "author": "Anonymous",
+    "link": "https://github.com",
+    "deszh-CN": "泊地修理",
+    "deszh-TW": "泊地修理",
+    "desja-JP": "泊地修理",
+    "desen-US": "泊地修理"
+  }
 }
