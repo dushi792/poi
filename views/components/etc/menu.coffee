@@ -351,7 +351,7 @@ window.allThemes.map (th) ->
       if th isnt window.theme
         window.applyTheme th
 appMenu = Menu.buildFromTemplate(template)
-if process.platform == 'darwin'
+if process.platform != 'win32'
   Menu.setApplicationMenu(appMenu)
 else
   window.appIcon?.setContextMenu(appMenu)

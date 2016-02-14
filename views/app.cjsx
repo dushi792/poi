@@ -24,7 +24,7 @@ window.PluginManager = require './services/plugin-manager'
 require('module').globalPaths.push(path.join(ROOT, "node_modules"))
 
 # Tray icon
-if process.platform != 'darwin'
+if process.platform == 'win32'
   window.appIcon = new Tray(path.join(ROOT, 'assets', 'icons', 'poi.ico'))
 
 # poi menu
