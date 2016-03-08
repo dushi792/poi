@@ -82,14 +82,13 @@ class PluginManager
   # read all plugins from file system
   # @param {boolean=} opt_notifyFailed notify user about unread plugins
   # @return {Promise<Array<Plugin>>}
-  readPlugins: async (opt_notifyFailed) ->
+  readPlugins: async () ->
     pluginPaths = yield Promise.promisify(globAsync)(path.join @pluginPath, 'node_modules', 'poi-plugin-*')
     @plugins_ = pluginPaths.map @readPlugin_
     for plugin_ in @plugins_
       if plugin_.enabled
         @loadPlugin(plugin_)
-    if opt_notifyFailed
-      @notifyFailed_()
+    @notifyFailed_()
     @plugins_ = _.sortBy @plugins_, 'priority'
     return @plugins_
 
@@ -372,11 +371,15 @@ class PluginManager
           try
             pluginMain = require plugin.pluginPath
             pluginMain.isRead = true
+            # For plugin with api v1
+            plugin.id = pluginMain.name if !plugin.packageData?.poiPlugin?.id? && pluginMain.name?
+            plugin.displayName = pluginMain.displayName if pluginMain.displayName?
           catch error
             pluginMain = isBroken: true
           _.extend pluginMain, @plugins_[index]
           pluginMain.isRead ?= false
           @plugins_[index] = pluginMain
+          pluginMain = null
           plugin = @plugins_[index]
           break
     @loadPlugin(plugin)
@@ -395,7 +398,7 @@ class PluginManager
     # Update envData of localStorage when plugin.useEnv && envData is outdated
     if plugin.useEnv && !window._portStorageUpdated
       for key in envKeyList
-        localStorage[key] = JSON.stringify window[key]
+        localStorage[key] = JSON.stringify window[key] if window[key]?
       window._portStorageUpdated = true
     # Create window when the plugin has a window
     if plugin.windowURL?
@@ -554,11 +557,13 @@ class PluginManager
         pluginMain = require pluginPath
         pluginMain.isRead = true
         # For plugin with api v1
+        plugin.id = pluginMain.name if !plugin.packageData?.poiPlugin?.id? && pluginMain.name?
         plugin.displayName = pluginMain.displayName if pluginMain.displayName?
       catch error
         pluginMain = isBroken: true
       _.extend pluginMain, plugin
       plugin = pluginMain
+      pluginMain = null
       plugin.isRead ?= false
     return plugin
 
