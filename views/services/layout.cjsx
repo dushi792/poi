@@ -61,7 +61,7 @@ adjustSize = ->
     if window.innerHeight - factor * 480 < cap
       factor = Math.ceil((window.innerHeight - cap) / 480.0 * 100) / 100.0
   if window.webviewWidth > 0.00001
-    factor = Math.ceil(window.webviewWidth / 800.0 * 100) / 100.0
+    factor = Math.max(window.webviewWidth / 800.0 * 100 / 100.0, 0.00125)
   window.webviewFactor = factor
   # Fix poi-info when game size 0x0
   if webviewWidth > -0.00001 and webviewWidth < 0.00001
@@ -69,9 +69,8 @@ adjustSize = ->
   else
     $('kan-game')?.style?.display = ''
   if url != 'http://www.dmm.com/netgame/social/-/gadgets/=/app_id=854854/' and !(url?.startsWith('http://osapi.dmm.com/gadgets/ifr'))
-    return if window.layout is 'vertical'
     $('kan-game #webview-wrapper')?.style?.width = "#{webviewWidth}px"
-    adjustWebviewHeight "#{window.innerHeight - poiControlHeight}px"
+    adjustWebviewHeight "#{Math.ceil(webviewWidth * 0.6)}px"
     factor = null
     return
   # Insert CSS
