@@ -10,8 +10,9 @@ window._delay = false
 $('#layout-css').setAttribute 'href', "./assets/css/layout.#{window.layout}.css"
 factor = null
 poiControlHeight = 30 # Magic number
-dropdownStyleAppended = false
-dropdownStyle = document.createElement 'style'
+additionalStyle = document.createElement 'style'
+remote.getCurrentWindow().webContents.on 'dom-ready', (e) ->
+  document.body.appendChild additionalStyle
 
 # Layout
 adjustWebviewHeight = (h) ->
@@ -20,33 +21,14 @@ adjustWebviewHeight = (h) ->
   $('kan-game webview')?.shadowRoot?.querySelector('object[is=browserplugin]')?.style?.height = h
 
 adjustSize = ->
-  poiapp = document.getElementsByTagName('poi-app')[0]
   webview = $('kan-game webview')
   url = null
   try
     url = webview?.getURL?()
   catch e
     url = null
-  poiapp?.style?.height = "#{window.innerHeight}px"
-  # Set height of panel
-  [].forEach.call $$('poi-app div.poi-app-tabpane'), (e) ->
-    if window.layout == 'horizontal'
-      e.style.height = "#{window.innerHeight / window.zoomLevel - poiControlHeight}px"
-    else
-      e.style.height = "#{(window.innerHeight - Math.ceil(480.0 * factor) - poiControlHeight) / window.zoomLevel - poiControlHeight}px"
-    e.style.overflowY = "scroll"
-  # Resize when window size smaller than webview size
-  if window.layout == 'vertical' && window.webviewWidth > window.innerWidth
-    nowWindow = remote.getCurrentWindow()
-    bound = nowWindow.getBounds()
-    borderX = bound.width - window.innerWidth
-    newWidth = window.webviewWidth
-    nowWindow.setBounds
-      x: bound.x
-      y: bound.y
-      width: parseInt(newWidth + borderX)
-      height: bound.height
-  # Get factor
+
+    # Get factor
   if window.layout == 'vertical'
     cap = 200 * window.zoomLevel
   else if window.doubleTabbed
@@ -63,6 +45,46 @@ adjustSize = ->
   if window.webviewWidth > 0.00001
     factor = Math.max(window.webviewWidth / 800.0 * 100 / 100.0, 0.00125)
   window.webviewFactor = factor
+
+  # Autoset style
+  if window.layout == 'horizontal'
+    tabpaneHeight = "#{window.innerHeight / window.zoomLevel - poiControlHeight}px"
+  else
+    tabpaneHeight = "#{(window.innerHeight - Math.ceil(480.0 * factor) - poiControlHeight) / window.zoomLevel - poiControlHeight}px"
+  additionalStyle.innerHTML =
+    """
+    poi-app {
+      height: #{window.innerHeight}px;
+      width: 0px;
+    }
+    poi-app div.poi-app-tabpane {
+      height: #{tabpaneHeight};
+      overflow-y: scroll;
+    }
+    div[role='tooltip'], #poi-app-container {
+      transform-origin : 0 0;
+      transform : scale(#{window.zoomLevel});
+    }
+    #poi-app-container {
+      width: #{Math.floor(100 / window.zoomLevel)}%;
+    }
+    poi-nav poi-nav-tabs .nav .dropdown-menu {
+      max-height: #{tabpaneHeight};
+      overflow: auto;
+    }
+    """
+  # Resize when window size smaller than webview size
+  if window.layout == 'vertical' && window.webviewWidth > window.innerWidth
+    nowWindow = remote.getCurrentWindow()
+    bound = nowWindow.getBounds()
+    borderX = bound.width - window.innerWidth
+    newWidth = window.webviewWidth
+    nowWindow.setBounds
+      x: bound.x
+      y: bound.y
+      width: parseInt(newWidth + borderX)
+      height: bound.height
+
   # Fix poi-info when game size 0x0
   if webviewWidth > -0.00001 and webviewWidth < 0.00001
     $('kan-game')?.style?.display = 'none'
@@ -122,16 +144,6 @@ adjustSize = ->
     $('kan-game #webview-wrapper')?.style?.width = "#{Math.floor(800 * factor)}px"
     $('kan-game #webview-wrapper')?.style?.marginLeft = "#{Math.max(0, Math.floor((window.innerWidth - Math.floor(800 * factor)) / 2.0))}px"
     $('kan-game')?.style?.marginTop = '0'
-  # Autoset plugin-dropdown height
-  if !dropdownStyleAppended
-    document.body.appendChild dropdownStyle
-    dropdownStyleAppended = true
-  dropdownStyle.innerHTML =
-    """poi-nav poi-nav-tabs .nav .dropdown-menu {
-      max-height: #{$('#MainView').style.height};
-      overflow: auto;
-    }
-    """
 
 if !window._delay
   adjustSize()

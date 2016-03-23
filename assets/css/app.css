@@ -3,6 +3,7 @@
 }
 ::-webkit-scrollbar {
   width: 0px;
+  height: 0px;
 }
 body {
   font-size: 13px;
@@ -20,6 +21,36 @@ body {
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.alert-main {
+  pointer-events: none;
+}
+.alert-container {
+  z-index: 2;
+  position: relative;
+  overflow: hidden;
+  pointer-events: auto;
+}
+.alert-history {
+  z-index: 1;
+  position: relative;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  transition: 0.3s;
+  overflow: hidden;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.alert-history-contents {
+  overflow: scroll;
+  text-overflow: initial;
+}
+.alert-history-show {
+  top: 0;
+  pointer-events: auto;
+}
+.alert-history-hidden {
+  pointer-events: none
 }
 .tab-content {
   overflow: auto;
