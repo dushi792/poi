@@ -27,6 +27,13 @@ window.ReactDOM = require 'react-dom'
 window.ReactBootstrap = require 'react-bootstrap'
 window.FontAwesome = require 'react-fontawesome'
 
+if dbg.isEnabled()
+  process.stderr.write = console.log.bind(console)
+  process.stdout.write = console.log.bind(console)
+else
+  process.stderr.write = (e) -> {}
+  process.stdout.write = (e) -> {}
+
 # Utils
 require './env-parts/utils'
 

@@ -57,188 +57,206 @@ InstalledPlugin = React.createClass
 
   render: ->
     plugin = @props.plugin
+    panelClass = classnames 'plugin-content',
+      'plugin-content-disabled': PluginManager.getStatusOfPlugin(plugin) != PluginManager.VALID
+    outdatedLabelClass = classnames 'update-label',
+      'hidden': !plugin.isOutdated
+    outdatedLabelbsStyle = classnames
+      'primary': plugin?.lastestVersion?.indexOf('beta') == -1
+      'warning': plugin?.lastestVersion?.indexOf('beta') != -1
+    outdatedLabelFAname = classnames
+      'spinner': plugin.isUpdating
+      'cloud-download': !plugin.isUpdating && plugin.isOutdated
+      'check': !plugin.isUpdating && !plugin.isOutdated
+    outdatedLabelText = classnames
+      "#{__ 'Updating'}": plugin.isUpdating
+      "Version #{plugin.lastestVersion}": !plugin.isUpdating && plugin.isOutdated
+      "#{__ 'Latest'}": !plugin.isUpdating && !plugin.isOutdated
+    enableBtnText = classnames
+      "#{__ 'Disable'}": PluginManager.getStatusOfPlugin(plugin) == PluginManager.VALID
+      "#{__ 'Enable'}": PluginManager.getStatusOfPlugin(plugin) == PluginManager.DISABLED
+      "#{__ 'Outdated'}": PluginManager.getStatusOfPlugin(plugin) == PluginManager.NEEDUPDATE
+      "#{__ 'Error'}": PluginManager.getStatusOfPlugin(plugin) == PluginManager.BROKEN
+    enableBtnFAname = classnames
+      'pause': PluginManager.getStatusOfPlugin(plugin) == PluginManager.VALID
+      'play': PluginManager.getStatusOfPlugin(plugin) == PluginManager.DISABLED
+      'ban': PluginManager.getStatusOfPlugin(plugin) == PluginManager.NEEDUPDATE
+      'close': PluginManager.getStatusOfPlugin(plugin) == PluginManager.BROKEN
+    removeBtnText = classnames
+      "#{__ 'Removing'}": plugin.isUninstalling
+      "#{__ 'Remove'}": plugin.isInstalled && !plugin.isUninstalling
+    removeBtnFAname = classnames
+      'trash': plugin.isInstalled
+      'trash-o': !plugin.isInstalled
+    btnGroupClass = classnames 'plugin-buttongroup',
+      'btn-xs-12': plugin.settingsClass?
+      'btn-xs-8': !plugin.settingsClass?
+    btnClass = classnames 'plugin-control-button',
+      'btn-xs-4': plugin.settingsClass?
+      'btn-xs-6': !plugin.settingsClass?
     <Row className='plugin-wrapper'>
       <Col xs={12}>
-        <Row>
-          <Col xs={12} className='div-row'>
-            <span className='plugin-name'>
-              {plugin.displayName}
-            </span>
-            <div className='author-wrapper'>{'@'}
-              <span className='author-link'
-                onClick={_.partial openLink, plugin.link}>
-                {plugin.author}
+        <Panel className={panelClass}>
+          <Row>
+            <Col xs={12} className='div-row'>
+              <span className='plugin-name'>
+                {plugin.displayName}
               </span>
-            </div>
-            <div className='update-wrapper'>
-              <div>
-                <Label bsStyle="#{if plugin?.lastestVersion?.indexOf('beta') == -1 then 'primary' else 'warning'}"
-                       className="update-label #{if not plugin.isOutdated then 'hidden'}"
-                       onClick={@props.handleUpdate}>
-                  <FontAwesome name={
-                                 if plugin.isUpdating
-                                   "spinner"
-                                 else if plugin.isOutdated
-                                   "cloud-download"
-                                 else
-                                   "check"
-                               }
-                               pulse={plugin.isUpdating}/>
-                  {
-                    if plugin.isUpdating
-                       __ "Updating"
-                    else if plugin.isOutdated
-                       "Version #{plugin.lastestVersion}"
-                    else
-                       __ "Latest"
-                  }
-                </Label>
+              <div className='author-wrapper'>{'@'}
+                <span className='author-link'
+                  onClick={_.partial openLink, plugin.link}>
+                  {plugin.author}
+                </span>
               </div>
-              <div>
-                Version {plugin.version || '1.0.0'}
+              <div className='update-wrapper'>
+                <div>
+                  <Label bsStyle={outdatedLabelbsStyle}
+                         className={outdatedLabelClass}
+                         onClick={@props.handleUpdate}>
+                    <FontAwesome name={outdatedLabelFAname}
+                                 pulse={plugin.isUpdating}/>
+                    {outdatedLabelText}
+                  </Label>
+                </div>
+                <div>
+                  Version {plugin.version || '1.0.0'}
+                </div>
               </div>
-            </div>
-          </Col>
-        </Row>
-        <Row>
-          <Col xs={7}>{plugin.description}</Col>
-          <Col xs={5}>
-            <ButtonGroup bsSize='small' className="plugin-buttongroup btn-xs-#{if plugin.settingsClass? then 12 else 8}">
-              {
-                if plugin.settingsClass?
-                  <OverlayTrigger placement='top' overlay={
-                     <Tooltip id="#{plugin.id}-set-btn">
-                       {__ 'Settings'}
-                     </Tooltip>
-                     }>
-                     <Button ref='setting-btn'
-                             bsStyle='primary' bsSize='xs'
-                             onClick={@toggleSettingPop}
-                             className='plugin-control-button btn-xs-4'>
-                       <FontAwesome name='gear' />
-                     </Button>
-                   </OverlayTrigger>
-              }
-              <OverlayTrigger placement='top' overlay={
-                <Tooltip id="#{plugin.id}-enb-btn">
+            </Col>
+          </Row>
+          <Row>
+            <Col className='plugin-description' xs={7}>{plugin.description}</Col>
+            <Col className='plugin-option' xs={5}>
+              <ButtonGroup bsSize='small' className={btnGroupClass}>
                 {
-                  switch PluginManager.getStatusOfPlugin plugin
-                    when PluginManager.VALID
-                      __ "Disable"
-                    when PluginManager.DISABLED
-                      __ "Enable"
-                    when PluginManager.NEEDUPDATE
-                      __ "Outdated"
-                    when PluginManager.BROKEN
-                      __ "Error"
+                  if plugin.settingsClass?
+                    <OverlayTrigger placement='top' overlay={
+                       <Tooltip id="#{plugin.id}-set-btn">
+                         {__ 'Settings'}
+                       </Tooltip>
+                       }>
+                       <Button ref='setting-btn'
+                               bsStyle='primary' bsSize='xs'
+                               onClick={@toggleSettingPop}
+                               className='plugin-control-button btn-xs-4'>
+                         <FontAwesome name='gear' />
+                       </Button>
+                     </OverlayTrigger>
                 }
-                </Tooltip>
-                }>
-                <Button bsStyle='info'
-                  disabled={PluginManager.getStatusOfPlugin(plugin) == PluginManager.NEEDUPDATE}
-                  onClick={@props.handleEnable}
-                  className="plugin-control-button btn-xs-#{if plugin.settingsClass? then 4 else 6}">
-                  <FontAwesome name={
-                    switch PluginManager.getStatusOfPlugin plugin
-                      when PluginManager.VALID
-                        "pause"
-                      when PluginManager.DISABLED
-                        "play"
-                      when PluginManager.NEEDUPDATE
-                        "ban"
-                      when PluginManager.BROKEN
-                        "close"
-                    }/>
-                </Button>
-              </OverlayTrigger>
-              <OverlayTrigger placement='top' overlay={
-                <Tooltip id="#{plugin.id}-rm-btn">
-                {
-                  if plugin.isUninstalling
-                    __ "Removing"
-                  else if plugin.isInstalled
-                    __ "Remove"
-                  else
-                    __ "Removed"
-                }
-                </Tooltip>
-                }>
-                <Button bsStyle='danger'
-                  onClick={@props.handleRemove}
-                  disabled={not plugin.isInstalled}
-                  className="plugin-control-button btn-xs-#{if plugin.settingsClass? then 4 else 6}">
-                  <FontAwesome name={if plugin.isInstalled then 'trash' else 'trash-o'} />
-                </Button>
-              </OverlayTrigger>
-            </ButtonGroup>
-          </Col>
-        </Row>
-        <Row>
-          {
-            if plugin.settingsClass?
-              <Collapse in={@state.settingOpen} className='plugin-setting-wrapper'>
-                <Col xs={12}>
-                  <Well>
-                    <PluginSettingWrap plugin={plugin} />
-                  </Well>
-                </Col>
-              </Collapse>
-          }
-        </Row>
+                <OverlayTrigger placement='top' overlay={
+                  <Tooltip id="#{plugin.id}-enb-btn">
+                    {enableBtnText}
+                  </Tooltip>
+                  }>
+                  <Button bsStyle='info'
+                    disabled={PluginManager.getStatusOfPlugin(plugin) == PluginManager.NEEDUPDATE}
+                    onClick={@props.handleEnable}
+                    className={btnClass}>
+                    <FontAwesome name={enableBtnFAname}/>
+                  </Button>
+                </OverlayTrigger>
+                <OverlayTrigger placement='top' overlay={
+                  <Tooltip id="#{plugin.id}-rm-btn">
+                    {removeBtnText}
+                  </Tooltip>
+                  }>
+                  <Button bsStyle='danger'
+                    onClick={@props.handleRemove}
+                    disabled={not plugin.isInstalled}
+                    className={btnClass}>
+                    <FontAwesome name={removeBtnFAname} />
+                  </Button>
+                </OverlayTrigger>
+              </ButtonGroup>
+            </Col>
+          </Row>
+          <Row>
+            {
+              if plugin.settingsClass?
+                <Collapse in={@state.settingOpen} className='plugin-setting-wrapper'>
+                  <Col xs={12}>
+                    <Well>
+                      <PluginSettingWrap plugin={plugin} />
+                    </Well>
+                  </Col>
+                </Collapse>
+            }
+          </Row>
+        </Panel>
       </Col>
     </Row>
 
 UninstalledPlugin = React.createClass
   render: ->
     plugin = @props.plugin
+    installButtonText = classnames
+      "#{__ "Installing"}": @props.installing
+      "#{__ "Install"}": !@props.installing
+    installButtonFAname = classnames
+      'spinner': @props.installing
+      'download': !@props.installing
     <Row className='plugin-wrapper'>
       <Col xs={12}>
-        <Row>
-          <Col xs={12} className='div-row'>
-            <span className='plugin-name'>
-              <FontAwesome name={plugin.icon} />
-                {' ' + plugin[window.language]}
-            </span>
-            <div className='author-wrapper'>{'@'}
-              <span className='author-link'
-                onClick={_.partial openLink, plugin.link}>
-                {plugin.author}
+        <Panel className='plugin-content'>
+          <Row>
+            <Col xs={12} className='div-row'>
+              <span className='plugin-name'>
+                <FontAwesome name={plugin.icon} />
+                  {' ' + plugin[window.language]}
               </span>
-            </div>
-          </Col>
-        </Row>
-        <Row>
-          <Col xs={7}>{plugin["des#{window.language}"]}</Col>
-          <Col xs={5}>
-            <ButtonGroup bsSize='small' className='plugin-buttongroup btn-xs-4'>
-              <OverlayTrigger placement='top' overlay={
-                <Tooltip id="#{plugin.id}-ins-btn">
-                {
-                  if @props.installing
-                    __ "Installing"
-                  else
-                    __ "Install"
-                }
-                </Tooltip>
-                }>
-                <Button bsStyle='primary'
-                  disabled={@props.npmWorkding}
-                  onClick={@props.handleInstall}
-                  className='plugin-control-button btn-xs-12'>
-                  <FontAwesome name={
-                      if @props.installing
-                        'spinner'
-                      else
-                        'download'
-                    }
-                    pulse={@props.installing}/>
-                </Button>
-              </OverlayTrigger>
-            </ButtonGroup>
-          </Col>
-        </Row>
+              <div className='author-wrapper'>{'@'}
+                <span className='author-link'
+                  onClick={_.partial openLink, plugin.link}>
+                  {plugin.author}
+                </span>
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col className='plugin-description' xs={7}>{plugin["des#{window.language}"]}</Col>
+            <Col className='plugin-option-install' xs={5}>
+              <ButtonGroup bsSize='small' className='plugin-buttongroup btn-xs-4'>
+                <OverlayTrigger placement='top' overlay={
+                  <Tooltip id="#{plugin.id}-ins-btn">
+                    {installButtonText}
+                  </Tooltip>
+                  }>
+                  <Button bsStyle='primary'
+                    disabled={@props.npmWorkding}
+                    onClick={@props.handleInstall}
+                    className='plugin-control-button btn-xs-12'>
+                    <FontAwesome name={installButtonFAname}
+                      pulse={@props.installing}/>
+                  </Button>
+                </OverlayTrigger>
+              </ButtonGroup>
+            </Col>
+          </Row>
+        </Panel>
       </Col>
     </Row>
+
+InstallByNameInput = React.createClass
+  getInitialState: ->
+    manuallyInstallPackage: ''
+  changeInstalledPackage: (e) ->
+    @setState {manuallyInstallPackage: e.target.value}
+  render: ->
+    <Input type="text"
+           value={@state.manuallyInstallPackage}
+           onChange={@changeInstalledPackage}
+           label={__ 'Install directly from npm'}
+           disabled={@props.manuallyInstallStatus == 1 || @props.npmWorkding}
+           placeholder={__ 'Input plugin package name...'}
+           bsSize='small'
+           buttonAfter={
+             <Button bsStyle='primary'
+                     disabled={@props.manuallyInstallStatus == 1 || @props.npmWorkding}
+                     onClick={@props.handleManuallyInstall.bind null, @state.manuallyInstallPackage}>
+               {__ 'Install'}
+             </Button>
+           }>
+    </Input>
 
 PluginConfig = React.createClass
   getInitialState: ->
@@ -254,7 +272,6 @@ PluginConfig = React.createClass
     updatingAll: false
     reloading: false
     advanced: false
-    manuallyInstallPackage: ''
     manuallyInstallStatus: 0
   isUpdateAvailable: false
   checkCount: 0
@@ -282,9 +299,6 @@ PluginConfig = React.createClass
   handleAdvancedShow: ->
     advanced = !@state.advanced
     @setState {advanced}
-  changeInstalledPackage: (e) ->
-    manuallyInstallPackage = e.target.value
-    @setState {manuallyInstallPackage}
   handleEnable: async (index) ->
     plugins = yield PluginManager.getInstalledPlugins()
     plugin = plugins[index]
@@ -438,6 +452,24 @@ PluginConfig = React.createClass
       config: config
     }
   render: ->
+    updateStatusFAname = classnames
+      'spinner': @state.updatingAll
+      'cloud-download': !@state.updatingAll
+    installStatusFAname = classnames
+      'spinner': @state.installingAll
+      'download': !@state.installingAll
+    installStatusbsStyle = classnames
+      'info': @state.manuallyInstallStatus == 1
+      'success': @state.manuallyInstallStatus == 2
+      'danger': @state.manuallyInstallStatus == 3
+      'warning': @state.manuallyInstallStatus < 1 || @state.manuallyInstallStatus > 3
+    advanceFAname = classnames
+      'angle-up': @state.advanced
+      'angle-down': !@state.advanced
+    installStatusText = classnames
+      "#{__("Installing")}...": @state.manuallyInstallStatus == 1
+      "#{__ "Plugins are installed successfully."}": @state.manuallyInstallStatus == 2
+      "#{__ "Install failed. Maybe the selected files are not plugin packages."}": @state.manuallyInstallStatus == 3
     <form className='contents-wrapper'>
       <Grid className='correct-container'>
         <Row>
@@ -456,14 +488,14 @@ PluginConfig = React.createClass
                       disabled={@state.npmWorkding ||
                         !@state.hasUpdates || @state.checkingUpdate}
                       className='control-button col-xs-3'>
-                <FontAwesome name={if @state.updatingAll then 'spinner' else 'cloud-download'}
+                <FontAwesome name={updateStatusFAname}
                              pulse={@state.updatingAll}/>
                 <span> {__ "Update all"}</span>
               </Button>
               <Button onClick={@handleInstallAll}
                       disabled={@state.npmWorkding}
                       className='control-button col-xs-3'>
-                <FontAwesome name={if @state.installingAll then 'spinner' else 'download'}
+                <FontAwesome name={installStatusFAname}
                              pulse={@state.installingAll}/>
                 <span> {__ "Install all"}</span>
               </Button>
@@ -471,7 +503,7 @@ PluginConfig = React.createClass
                       className='control-button col-xs-3'>
                 <FontAwesome name="gear" />
                 <span> {__ "Advanced"} </span>
-                <FontAwesome name="#{if @state.advanced then 'angle-up' else 'angle-down'}" />
+                <FontAwesome name={advanceFAname} />
               </Button>
             </ButtonGroup>
           </Col>
@@ -544,46 +576,17 @@ PluginConfig = React.createClass
         <Row className='plugin-rowspace'>
           <Collapse in={@state.manuallyInstallStatus > 0}>
             <Col xs=12>
-              <Alert bsStyle={
-                  switch @state.manuallyInstallStatus
-                    when 1
-                      "info"
-                    when 2
-                      "success"
-                    when 3
-                      "danger"
-                }>
-                {
-                  switch @state.manuallyInstallStatus
-                    when 1
-                      __("Installing") + "..."
-                    when 2
-                      __ "Plugins are installed successfully."
-                    when 3
-                      __ "Install failed. Maybe the selected files are not plugin packages."
-                }
+              <Alert bsStyle={installStatusbsStyle}>
+                {installStatusText}
               </Alert>
             </Col>
           </Collapse>
         </Row>
         <Row className='plugin-rowspace'>
           <Col xs=12>
-            {
-              installButton =
-                <Button bsStyle='primary'
-                        disabled={@state.manuallyInstallStatus == 1 || @state.npmWorkding}
-                        onClick={@handleManuallyInstall.bind @, @state.manuallyInstallPackage}>
-                  {__ 'Install'}
-                </Button>
-              <Input type="text"
-                     value={@state.manuallyInstallPackage}
-                     onChange={@changeInstalledPackage}
-                     label={__ 'Install directly from npm'}
-                     disabled={@state.manuallyInstallStatus == 1 || @state.npmWorkding}
-                     placeholder={__ 'Input plugin package name...'}
-                     bsSize='small'
-                     buttonAfter={installButton} />
-            }
+            <InstallByNameInput handleManuallyInstall={@handleManuallyInstall}
+                                manuallyInstallStatus={@state.manuallyInstallStatus}
+                                npmWorkding={@state.npmWorkding} />
           </Col>
           <Col xs={12}>
             <div className="folder-picker"

@@ -215,7 +215,7 @@ class PluginManager
     outdatedPlugins = []
     outdatedList = []
     tasks = plugins.map async (plugin, index) =>
-      if semver.lt(POI_VERSION, plugin.earlistCompatibleMain)
+      if semver.lt(POI_VERSION, plugin.earliestCompatibleMain)
         @plugins_[index]?.isOutdated = @plugins_[index].needRollback
         @plugins_[index]?.lastestVersion = @plugins_[index]?.lastApiVer
       else try
@@ -375,6 +375,8 @@ class PluginManager
             plugin.displayName = pluginMain.displayName if pluginMain.displayName?
             plugin.priority = pluginMain.priority if plugin.priority == 10000 && pluginMain.priority?
           catch error
+            console.log error
+            console.log error.stack
             pluginMain = isBroken: true
           _.extend pluginMain, @plugins_[index]
           pluginMain.isRead ?= false
@@ -434,7 +436,10 @@ class PluginManager
         plugin.handleClick = ->
           plugin.pluginWindow.show()
     # Lifecycle
-    plugin.pluginDidLoad() if typeof plugin.pluginDidLoad is 'function'
+    try
+      plugin.pluginDidLoad() if typeof plugin.pluginDidLoad is 'function'
+    catch error
+      console.log error
     @emitReload()
 
   # unload one plugin
@@ -442,7 +447,10 @@ class PluginManager
   unloadPlugin: (plugin) ->
     return if !plugin?
     # Lifecycle
-    plugin.pluginWillUnload() if typeof plugin.pluginWillUnload is 'function'
+    try
+      plugin.pluginWillUnload() if typeof plugin.pluginWillUnload is 'function'
+    catch error
+      console.log error
     # Destroy window
     windowManager.closeWindow(plugin.pluginWindow) if plugin.pluginWindow?
     @emitReload()
@@ -468,6 +476,9 @@ class PluginManager
         if plugin == plugin_.packageName
           plugin = plugin_
           break
+    if typeof plugin == 'string'
+      console.log 'Plugin not found!'
+      return
     @unloadPlugin(plugin)
     newPlugin = {}
     delete require.cache[require.resolve plugin.pluginPath]
@@ -511,14 +522,14 @@ class PluginManager
     plugin.icon ?= 'fa/th-large'
     plugin.version = plugin.packageData?.version || '0.0.0'
     plugin.lastestVersion = plugin.version
-    plugin.earlistCompatibleMain ?= '0.0.0'
+    plugin.earliestCompatibleMain ?= '0.0.0'
     plugin.lastApiVer ?= plugin.version
     plugin.priority ?= 10000
     plugin.enabled = config.get "plugin.#{plugin.id}.enable", true
     plugin.isInstalled = true
-    plugin.needRollback = semver.lt(POI_VERSION, plugin.earlistCompatibleMain) && semver.gt(plugin.version, plugin.lastApiVer)
+    plugin.needRollback = semver.lt(POI_VERSION, plugin.earliestCompatibleMain) && semver.gt(plugin.version, plugin.lastApiVer)
     plugin.isOutdated = plugin.needRollback
-    plugin.lastestVersion = plugin.lastApiVer if semver.lt(POI_VERSION, plugin.earlistCompatibleMain)
+    plugin.lastestVersion = plugin.lastApiVer if semver.lt(POI_VERSION, plugin.earliestCompatibleMain)
     # i18n
     i18nFile = null
     if plugin.i18nDir?
@@ -561,6 +572,8 @@ class PluginManager
         plugin.displayName = pluginMain.displayName if pluginMain.displayName?
         plugin.priority = pluginMain.priority if plugin.priority == 10000 && pluginMain.priority?
       catch error
+        console.log error
+        console.log error.stack
         pluginMain = isBroken: true
       _.extend pluginMain, plugin
       plugin = pluginMain

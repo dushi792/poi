@@ -1,7 +1,11 @@
 window._portStorageUpdated = true
 envKeyList = ['_teitokuLv', '_nickName', '_nickNameId', '_teitokuExp', '_teitokuId', '_slotitems', '_ships', '_decks', '_ndocks']
 
-handleProxyGameOnRequest = (method, path, body) ->
+isGameApi = (pathname) ->
+  pathname.startsWith '/kcsapi'
+
+handleProxyGameOnRequest = (method, [domain, path], body) ->
+  return if !isGameApi path
   # Parse the json object
   try
     body = JSON.parse body
@@ -56,7 +60,7 @@ resolveResponses = ->
     _.extend _.clone(window.$slotitems[item.api_slotitem_id]), item
   locked = true
   while responses.length > 0
-    [method, path, body, postBody] = responses.shift()
+    [method, [domain, path, url], body, postBody] = responses.shift()
     try
       # Delete api_token
       delete postBody.api_token if postBody?.api_token?
@@ -89,6 +93,12 @@ resolveResponses = ->
             localStorage.start2Body = JSON.stringify body
           window.dispatchEvent new Event 'initialize.complete'
         # User datas prefixed by _
+        when '/kcsapi/api_get_member/require_info'
+          if body.api_basic?
+            window._teitokuId = body.api_basic.api_member_id
+          if body.api_slot_item?
+            window._slotitems = {}
+            _slotitems[item.api_id] = extendSlotitem item for item in body.api_slot_item
         when '/kcsapi/api_get_member/basic'
           window._teitokuLv = body.api_level
           window._nickName = body.api_nickname
@@ -123,8 +133,12 @@ resolveResponses = ->
           _ships[ship.api_id] = extendShip ship for ship in body.api_ship
           window._decks = body.api_deck_port
           window._ndocks = body.api_ndock.map (e) -> e.api_ship_id
-          window._teitokuLv = body.api_basic.api_level
           window._portStorageUpdated = false
+          if body.api_basic?
+            window._teitokuLv = body.api_basic.api_level
+            window._nickName = body.api_basic.api_nickname
+            window._nickNameId = body.api_basic.api_nickname_id
+            window._teitokuExp = body.api_basic.api_experience
         when '/kcsapi/api_req_hensei/change'
           decks = window._decks
           deckId = parseInt(postBody.api_id) - 1
@@ -255,15 +269,30 @@ resolveResponses = ->
           body: body
           postBody: postBody
       window.dispatchEvent event
+      if path in ['/kcs/mainD2.swf', '/kcsapi/api_start2', '/kcsapi/api_get_member/basic']
+        handleProxyGameStart()
+      else if url.startsWith 'http://www.dmm.com/netgame/social/application/-/purchase/=/app_id=854854/payment_id='
+        handleProxyGamePayitem()
     catch err
       console.error err
   locked = false
 
-handleProxyGameOnResponse = (method, path, body, postBody) ->
+handleProxyGameOnResponse = (method, [domain, path, url], body, postBody) ->
+  return if !isGameApi path
   # Parse the json object
   try
-    responses.push [method, path, JSON.parse(body), JSON.parse(postBody)]
-    resolveResponses() if !locked
+    body = JSON.parse(body)
+    if body.api_result == 1
+      body = body.api_data if body.api_data?
+      responses.push [method, [domain, path, url], body, JSON.parse(postBody)]
+      resolveResponses() if !locked
+    else
+      event = new CustomEvent 'network.invalid.result',
+        bubbles: true
+        cancelable: true
+        detail:
+          code: body.api_result
+      window.dispatchEvent event
   catch e
     console.log e
 
@@ -273,7 +302,8 @@ handleProxyGameStart = ->
 handleProxyGamePayitem = ->
   window.dispatchEvent new Event 'game.payitem'
 
-handleProxyNetworkErrorRetry = (counter) ->
+handleProxyNetworkErrorRetry = ([domain, path, url], counter) ->
+  return if !isGameApi path
   event = new CustomEvent 'network.error.retry',
     bubbles: true
     cancelable: true
@@ -281,25 +311,15 @@ handleProxyNetworkErrorRetry = (counter) ->
       counter: counter
   window.dispatchEvent event
 
-handleProxyNetworkInvalidCode = (code) ->
-  event = new CustomEvent 'network.invalid.code',
-    bubbles: true
-    cancelable: true
-    detail:
-      code: code
-  window.dispatchEvent event
-
-handleProxyNetworkError = ->
-  window.dispatchEvent new Event 'network.error'
+handleProxyNetworkError = ([domain, path, url]) ->
+  if url.startsWith('http://www.dmm.com/netgame/') or url.indexOf('/kcs/') != -1 or url.indexOf('/kcsapi/') != -1
+    window.dispatchEvent new Event 'network.error'
 
 proxyListener =
-  'game.on.request': handleProxyGameOnRequest
-  'game.on.response': handleProxyGameOnResponse
-  'game.start': handleProxyGameStart
-  'game.payitem': handleProxyGamePayitem
-  'network.error.retry': handleProxyNetworkErrorRetry
-  'network.invalid.code': handleProxyNetworkInvalidCode
+  'network.on.request': handleProxyGameOnRequest
+  'network.on.response': handleProxyGameOnResponse
   'network.error': handleProxyNetworkError
+  'network.error.retry': handleProxyNetworkErrorRetry
 
 window.listenerStatusFlag = false
 

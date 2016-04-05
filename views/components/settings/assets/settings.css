@@ -111,10 +111,35 @@
   padding-left: 2px;
 }
 #SettingsView .plugin-wrapper {
-  padding-bottom: 8px;
+}
+#SettingsView .plugin-content {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+#SettingsView .plugin-content-disabled .plugin-name,
+#SettingsView .plugin-content-disabled .author-wrapper,
+#SettingsView .plugin-content-disabled .plugin-description {
+  opacity: 0.5;
+}
+#SettingsView .plugin-content > .panel-body {
+  padding: 10px;
 }
 #SettingsView .plugin-name {
   font-size: 150%;
+}
+#SettingsView .plugin-description {
+  min-height: 30px;
+  padding-top: 5px;
+}
+#SettingsView .plugin-option {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+#SettingsView .plugin-option-install {
+  position: absolute;
+  bottom: 10px;
+  right: 11px;
 }
 #SettingsView .plugin-buttongroup {
   margin-left: auto;
@@ -126,7 +151,7 @@
 #SettingsView .contents-wrapper {
 }
 #SettingsView .plugin-rowspace {
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 #SettingsView .select-npm-server {
 }

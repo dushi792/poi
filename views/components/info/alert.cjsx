@@ -4,17 +4,38 @@ __ = window.i18n.others.__.bind(i18n.others)
 __n = window.i18n.others.__n.bind(i18n.others)
 keyCount = 0
 alertStyle = document.createElement 'style'
+alertStyle.innerHTML = """
+  poi-alert {
+    height: 30px;
+  }
+  #alert-container {
+    height: 30px;
+  }
+  #alert-main {
+    height: 182px;
+    overflow: hidden;
+    position: relative;
+    bottom: 152px;
+  }
+  .alert-history-hidden {
+    top: 182px;
+  }
+"""
 remote.getCurrentWindow().webContents.on 'dom-ready', (e) ->
   document.body.appendChild alertStyle
 
 # Alert info
 PoiAlert = React.createClass
   getInitialState: ->
+    history = []
+    for i in [0..4]
+      history.push <div key={keyCount++} className='alert alert-default alert-history-contents'>　</div>
+    @lastMessage = '　'
     message: __ 'Waiting for response...'
     type: 'default'
     overflow: false
     messagewidth: 0
-    history: []
+    history: history
     showHistory: false
 
   updateAlert: (e, overflow, alertChanged) ->
@@ -76,7 +97,7 @@ PoiAlert = React.createClass
       @messageOld = @message
       @messageType = e.detail.type
       @updateAlert()
-      @handleThemeChange()
+      @handleStyleChange()
     else if !@dontReserve
       history = @state.history
       history.push <div key={keyCount++} className='alert alert-default alert-history-contents'>{@lastMessage}</div>
@@ -88,14 +109,14 @@ PoiAlert = React.createClass
     @setState
       showHistory: !@state.showHistory
 
-  handleThemeChange: ->
+  handleStyleChange: ->
     setTimeout =>
       try
         alertHeight = $('poi-control').offsetHeight
         historyHeight = $('.alert-history').offsetHeight
       catch error
-        alertHeight = 28
-        historyHeight = 30
+        alertHeight = 30
+        historyHeight = 152
       alertStyle.innerHTML = """
         poi-alert {
           height: #{alertHeight}px;
@@ -124,7 +145,7 @@ PoiAlert = React.createClass
   componentDidMount: ->
     window.addEventListener 'poi.alert', @handleAlert
     window.addEventListener 'alert.change', @alertWidthChange
-    window.addEventListener 'theme.change', @handleThemeChange
+    window.addEventListener 'theme.change', @handleStyleChange
     @alertWidth = document.getElementById('alert-container').offsetWidth
     @message = @state.message
     @messageOld = @message
@@ -136,6 +157,7 @@ PoiAlert = React.createClass
       attributes: true
       subtree: true
     observer.observe(target, options)
+    @handleStyleChange()
   componentDidUpdate: ->
     setTimeout =>
       @alertWidth = document.getElementById('alert-container').offsetWidth
@@ -145,7 +167,7 @@ PoiAlert = React.createClass
   componentWillUnmount: ->
     window.removeEventListener 'poi.alert', @handleAlert
     window.removeEventListener 'alert.change', @alertWidthChange
-    window.removeEventListener 'theme.change', @handleThemeChange
+    window.removeEventListener 'theme.change', @handleStyleChange
   render: ->
     <div id='alert-main' className='alert-main'>
       <div id='alert-history'
